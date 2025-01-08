@@ -1,10 +1,8 @@
 <script lang="ts">
   import "./app.css";
   import { Trash2, Plus, TriangleAlert, ChevronDown, ChevronUp, Check, TagIcon } from "lucide-svelte";
-  import ac from "./assets/air-conditioning.jpg";
   import Tag from "./lib/Tag.svelte";
   import { fade, fly, scale, slide } from "svelte/transition";
-  import { onMount } from "svelte";
 
   type Photo = {
     name: string;
