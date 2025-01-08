@@ -20,13 +20,13 @@
   };
 
   let renameInputElement: HTMLInputElement;
-  let photos: Photo[] = Array(27);
+  let photos: Photo[] = Array(32);
   let selectedIndex: number = -1;
   let newPhotoName: string = "";
   let allPhotosLoadedPromise: Promise<boolean>;
 
   function getRandomArbitrary(min: number, max: number) {
-    return Math.floor(Math.random() * (max - min) + min);
+    return Math.floor((Math.random() * (max - min) + min)/5) * 5;
   }
 
 
