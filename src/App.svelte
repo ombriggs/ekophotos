@@ -4,6 +4,7 @@
   import ac from "./assets/air-conditioning.jpg";
   import Tag from "./lib/Tag.svelte";
   import { fade, fly, scale, slide } from "svelte/transition";
+  import { onMount } from "svelte";
 
   type Photo = {
     name: string;
@@ -14,25 +15,50 @@
     hersTags: string[];
     productTags: string[];
     customTags: string[];
+    src: string;
+    rebateAmount: number;
   };
 
   let renameInputElement: HTMLInputElement;
   let photos: Photo[] = Array(27);
   let selectedIndex: number = -1;
   let newPhotoName: string = "";
+  let allPhotosLoadedPromise: Promise<boolean>;
 
-  photos = photos.fill({
-    name: "", 
-    index: 0,
-    isSelected: false, 
-    showProductTags: false, 
-    showRebates: false, 
-    hersTags: [], 
-    customTags: [], 
-    productTags: []
-  }).map((photo, indx) => {
-    return {...photo, name: `air_conditioner_${indx}`, index: indx}
-  });
+  function getRandomArbitrary(min: number, max: number) {
+    return Math.floor(Math.random() * (max - min) + min);
+  }
+
+
+  const getRandomPhoto = async (): Promise<string> => {
+    const url = 'https://picsum.photos/960/540';
+    const response = await fetch(url);
+
+    if (response.ok) {
+      const data = await response.blob();
+      const blobUrl = URL.createObjectURL(data);
+      return blobUrl;
+    }
+    return '';
+  };
+
+  const loadPhotos = async () => {
+    allPhotosLoadedPromise = new Promise(async (resolve, reject) => {
+      try {
+        const updatedItems = await Promise.all(
+          photos.map(async (item) => {
+            const details = await getRandomPhoto();
+            return { ...item, src: details };
+          })
+        );
+        photos = updatedItems;
+        resolve(true);
+      }
+      catch (err) {
+        reject("An error ocurred");
+      }
+    });
+  };
 
   const getDisplayName = (photo: Photo) => {
     return `C:\\\\work\\\\ekotrope\\\\photos\\\\${photo.name}`
@@ -108,18 +134,38 @@
     return words.slice(0, -1).join(', ') + ', and ' + words[words.length - 1];
   }
 
+  photos = photos.fill({
+    name: "", 
+    index: 0,
+    isSelected: false, 
+    showProductTags: false, 
+    showRebates: false, 
+    hersTags: [], 
+    customTags: [], 
+    productTags: [],
+    src: '',
+    rebateAmount: 1
+  }).map((photo, indx) => {
+    return {...photo, name: `photo_${indx}`, index: indx, rebateAmount: getRandomArbitrary(5, 100)}
+  });
+  loadPhotos();
+
   $: selectedPhotos = photos.filter(photo => photo.isSelected);
   $: showWaterHeaters = true;
   $: showExteriorInsulations = true;
+
 </script>
 
+{#await allPhotosLoadedPromise}
+  <div class="flex justify-center pt-20">Loading photos...</div>
+{:then _}
 <main class="flex flex-row  text-slate-200 px-4 h-screen items-start justify-evenly  overflow-y-auto">
   <div class="flex flex-wrap gap-4 items-center justify-center w-3/4 basis-2/4 pt-8">
     {#each photos as photo, indx (photo)}
     <div class="flex flex-col max-w-[250px]">
       <button class="relative w-[250px] rounded-md p-1 m-0 overflow-hidden group peer transition-all hover:scale-110 hover:outline outline-2 outline-gray-400" on:click={() => showSidePanel(indx)} out:fade={{duration: 700}}>
         <div class="relative rounded-md">
-          <img alt="Air conditioner" src={ac} class="w-full rounded-md transition-opacity duration-300 group-hover:opacity-60" />
+          <img alt="Air conditioner" src={photo.src} class="w-full rounded-md transition-opacity duration-300 group-hover:opacity-60" />
           <button class="absolute bg-white top-1 left-2 border-2 border-black rounded-md text-green-600 size-8" on:click|stopPropagation={() => showSidePanelMulti(indx)}>
             {#if photos[indx].isSelected}  
             <div class="w-fit h-fit" in:scale out:scale>
@@ -128,7 +174,7 @@
             {/if}
           </button>
           <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 pointer-events-none">
-            <span class="text-white pointer-events-none">$20 available rebates</span>
+            <span class="text-white pointer-events-none">${photo.rebateAmount} available rebates</span>
           </div>
           <button class="absolute bottom-2 right-2 bg-transparent border-none text-white cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:text-red-700" on:click|stopPropagation={() => deletePhoto(photo.index)}>
             <Trash2 />
@@ -150,18 +196,18 @@
       <div class=" text-xl font-bold self-start">Tags</div>
       <div class=" flex flex-col gap-2 self-start">
         <div class="flex flex-col gap-1" class:invisible={selectedPhotos.length > 1}>
-          <img alt="An air conditioner" src={ac} class="rounded-lg h-fit w-[500px] self-center" />
+          <img alt="An air conditioner" src={selectedPhotos[0].src} class="rounded-lg h-fit w-[500px] self-center" />
           <span>{getDisplayName(selectedPhotos[0])}</span>
         </div>
 
         <div class=" flex" class:invisible={selectedPhotos.length === 1}>
           {#if selectedPhotos.length < 6}
-            {#each selectedPhotos as _}
-              <img alt="An air conditioner" src={ac} class="rounded-full size-24 border-2 border-black -ml-5" in:fly />
+            {#each selectedPhotos as photo}
+              <img alt="An air conditioner" src={photo.src} class="rounded-full size-24 border-2 border-black -ml-5" in:fly />
             {/each}
           {:else}
-            {#each selectedPhotos.slice(0, 5) as _}
-              <img alt="An air conditioner" src={ac} class="rounded-full size-24 border-2 border-black -ml-5" />
+            {#each selectedPhotos.slice(0, 5) as photo}
+              <img alt="An air conditioner" src={photo.src} class="rounded-full size-24 border-2 border-black -ml-5" />
             {/each}
             <div class="rounded-full size-24 bg-gray-600 flex items-center justify-center font-bold text-lg ml-2" in:fly>+{selectedPhotos.length - 5} more</div>
           {/if}
@@ -179,7 +225,7 @@
           </div>
 
           <div class="flex flex-col gap-1">
-            <span class="font-semibold">Product Tags (Up to $20 in rebates available):</span>
+            <span class="font-semibold">Product Tags (Up to ${selectedPhotos.map(photo => photo.rebateAmount).reduce((acc, curr) => acc + curr, 0)} in rebates available):</span>
             <div class="flex">
               <button class="bg-slate-700 size-8 rounded-lg p-1 border-2 border-black hover:border-gray-500 mr-2" on:click={showProductTagOptions}>
                 <Plus size="20" />
@@ -247,6 +293,8 @@
     </div>
   {/if}
 </main>
+{/await}
+
 
 <style>  
   .hidden {
